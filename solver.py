@@ -20,12 +20,6 @@ VER_R = u'\u252B'
 VER_HOR = u'\u254B'
 BOX = u'\u25A1'
 
-def parse_initial_state():
-    game_state = []
-    for _ in range(9):
-        for c in raw_input():
-            game_state.append(int(c))
-    return tuple(game_state)
 
 def init_constraints():
     constraints = Node(-1, -1, -1)
@@ -83,7 +77,7 @@ def init_constraints():
             for block_row in range(3):
                 for block_column in range(3):
                     if block_column == 0 and block_row == 0:
-                        continue
+                        continue # first node already created
                     column = base_column + block_column
                     row = base_row + block_row
                     node.insert_up(Node(number, column, row))
@@ -97,6 +91,8 @@ def init_constraints():
             for number in range(9):
                 squares[column][row][number] = squares[column][row][number].right()
 
+    # constraints are the major data structure, using 2d linked-list
+    # squares provide quick access into a particular square for initial state
     return (constraints, squares)
 
 def inform_constraints(square):
@@ -140,36 +136,6 @@ def uninform_constraints(square):
             vertical = vertical.down()
 
         current = current.left()
-    
-def inform_constraints(squares, column, row, number):
-    square = squares[column][row][number]
-
-    # each square solves 4 constraints (columns)
-    square_row = square
-    for _ in range(4):
-        current = square_row
-        # traverse column
-        while True:
-            if current.is_header():
-                current.left().delete_right()
-            else:
-                horizontal = current
-                # traverse row
-                while True:
-                    horizontal.up().delete_down()
-                    horizontal = horizontal.right()
-                    if horizontal is current:
-                        break
-            current = current.up()
-            if current is square_row:
-                break
-        square_row = square_row.right()
-
-    
-
-def solve_constraint(constraints):
-    print
-    
 
 def success(constraints):
     return constraints.right() is constraints
@@ -182,6 +148,50 @@ def need_backtrack(constraints):
             return True
         if constraint is constraints:
             return False
+
+def update_state(state, number, column, row):
+    index = 9 * (row - 1) + (column - 1)
+    return state[:index] + (number,) + state[index + 1:]
+
+def parse_initial_state():
+    game_state = []
+    for _ in range(9):
+        for c in raw_input():
+            game_state.append(int(c))
+    return tuple(game_state)
+
+def solve_initial_constraints(initial_state, constraints, squares):
+    print 'initializing'
+    for i, number in enumerate(initial_state):
+        if number != 0:
+            column = i % 9 + 1
+            row = i / 9 + 1
+            square = squares[column - 1][row - 1][number - 1]
+            inform_constraints(square)
+
+def solve_constraints(constraints, state):
+    print 'solving'
+    if success(constraints):
+        return state
+    elif need_backtrack(constraints):
+        return False
+
+    constraint = constraints.right() # TODO: use Knuth's optimization of constraint with lowest number
+    vertical = constraint.down()
+    while not vertical is constraint:
+        inform_constraints(vertical)
+        solution = solve_constraints(constraints, state)
+        if solution:
+            number = vertical.number()
+            column = vertical.column()
+            row = vertical.row()
+            return update_state(solution, number, column, row)
+        else:
+            # need to backtrack
+            uninform_constraints(vertical)
+        vertical = vertical.down()
+
+    return False # no way to solve the selected constraint from this state        
 
 def print_state(state):
     print TL + HOR * 7 + HOR_T + HOR * 7 + HOR_T + HOR * 7 + TR
@@ -205,8 +215,12 @@ def print_state(state):
 def main():
     initial_state = parse_initial_state()
     constraints, squares = init_constraints()
-    print 'backtrack:', need_backtrack(constraints)
-    print 'success:', success(constraints)
+    solve_initial_constraints(initial_state, constraints, squares)
+    solution = solve_constraints(constraints, initial_state)
+    if not solution:
+        print "This puzzle cannot be solved"
+    else:
+        print_state(solution)
 
 if __name__ == "__main__":
     main()            

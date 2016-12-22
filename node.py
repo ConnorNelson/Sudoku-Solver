@@ -23,7 +23,7 @@ class Node(object):
         return '[' + str(self._column) + ' ' + str(self._row) + ' ' + str(self._number) + ']'
             
     def is_header(self):
-        return column == 0 and row == 0
+        return self._column == 0 and self._row == 0
 
     def column(self):
         return self._column
