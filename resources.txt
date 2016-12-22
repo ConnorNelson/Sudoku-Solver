@@ -1,2 +1,0 @@
-ttps://en.wikipedia.org/wiki/Knuth's_Algorithm_X
-http://garethrees.org/2007/06/10/zendoku-generation/#section-4.2
