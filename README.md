@@ -7,18 +7,19 @@ Redirect standard input:
 python solver.py < [PATH TO PUZZLE]
 ```
 
-## Input Sudoku Format
-Columns are not separated, rows are separated by new lines 
-Unknown values are represented by 0s 
+## Input Format
+Columns are not separated  
+Rows are separated by new lines  
+Unknown values are represented by 0s  
 
-Example: 
-000790050 
-352008040 
-000000080 
-010070004 
-600301008 
-900080010 
-020000000 
-040500891 
-080037000 
+Example:  
+000790050  
+352008040  
+000000080  
+010070004  
+600301008  
+900080010  
+020000000  
+040500891  
+080037000  
 
