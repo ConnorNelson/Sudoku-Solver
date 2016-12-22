@@ -9,8 +9,8 @@ class Node(object):
         self._column = column
         self._row = row
         
-        self._prev = self
-        self._next = self
+        self._left = self
+        self._right = self
         self._up = self
         self._down = self
         
@@ -34,11 +34,11 @@ class Node(object):
     def number(self):
         return self._number
 
-    def nxt(self):
-        return self._next
+    def right(self):
+        return self._right
 
-    def prev(self):
-        return self._prev
+    def left(self):
+        return self._left
 
     def up(self):
         return self._up
@@ -46,17 +46,17 @@ class Node(object):
     def down(self):
         return self._down
 
-    def insert_next(self, node):
-        node._next = self._next
-        self._next._prev = node
-        self._next = node
-        node._prev = self
+    def insert_right(self, node):
+        node._right = self._right
+        self._right._left = node
+        self._right = node
+        node._left = self
 
-    def insert_prev(self, node):
-        node._prev = self._prev
-        self._prev._next = node
-        self._prev = node
-        node._next = self
+    def insert_left(self, node):
+        node._left = self._left
+        self._left._right = node
+        self._left = node
+        node._right = self
 
     def insert_up(self, node):
         node._up = self._up
@@ -70,13 +70,13 @@ class Node(object):
         self._down = node
         node._up = self
 
-    def delete_next(self):
-        self._next = self._next._next
-        self._next._prev = self
+    def delete_right(self):
+        self._right = self._right._right
+        self._right._left = self
 
-    def delete_prev(self):
-        self._prev = self._prev._prev
-        self._prev._next = self
+    def delete_left(self):
+        self._left = self._left._left
+        self._left._right = self
 
     def delete_up(self):
         self._up = self._up._up

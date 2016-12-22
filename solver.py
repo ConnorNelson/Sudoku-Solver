@@ -42,7 +42,7 @@ def init_constraints():
                 node.insert_up(Node(number, column, row))
                 numbers.append(node.up())
             node.insert_up(Node(9))
-            constraints.insert_prev(node.up())
+            constraints.insert_left(node.up())
             rows.append(numbers)
         squares.append(rows)
 
@@ -50,27 +50,27 @@ def init_constraints():
     for number in range(1, 10):
         for column in range(1, 10):
             node = Node(number, column, 1)
-            squares[column - 1][0][number - 1].insert_next(node)
+            squares[column - 1][0][number - 1].insert_right(node)
             squares[column - 1][0][number - 1] = node
             for row in range(2, 10):
                 node.insert_up(Node(number, column, row))
-                squares[column - 1][row - 1][number - 1].insert_next(node.up())
+                squares[column - 1][row - 1][number - 1].insert_right(node.up())
                 squares[column - 1][row - 1][number - 1] = node.up()
             node.insert_up(Node(9))
-            constraints.insert_prev(node.up())
+            constraints.insert_left(node.up())
                 
     # every number in every row (some column in every number/row)
     for number in range(1, 10):
         for row in range(1, 10):
             node = Node(number, 1, row)
-            squares[0][row - 1][number - 1].insert_next(node)
+            squares[0][row - 1][number - 1].insert_right(node)
             squares[0][row - 1][number - 1] = node
             for column in range(2, 10):
                 node.insert_up(Node(number, column, row))
-                squares[column - 1][row - 1][number - 1].insert_next(node.up())
+                squares[column - 1][row - 1][number - 1].insert_right(node.up())
                 squares[column - 1][row - 1][number - 1] = node.up()
             node.insert_up(Node(9))
-            constraints.insert_prev(node.up())
+            constraints.insert_left(node.up())
                 
     # every number in every block
     for number in range (1, 10):
@@ -78,7 +78,7 @@ def init_constraints():
             base_column = (3 * block) % 9 + 1
             base_row = 3 * (block / 3) + 1
             node = Node(number, base_column, base_row)
-            squares[base_column - 1][base_row - 1][number - 1].insert_next(node)
+            squares[base_column - 1][base_row - 1][number - 1].insert_right(node)
             squares[base_column - 1][base_row - 1][number - 1] = node
             for block_row in range(3):
                 for block_column in range(3):
@@ -87,20 +87,61 @@ def init_constraints():
                     column = base_column + block_column
                     row = base_row + block_row
                     node.insert_up(Node(number, column, row))
-                    squares[column - 1][row - 1][number - 1].insert_next(node.up())
+                    squares[column - 1][row - 1][number - 1].insert_right(node.up())
                     squares[column - 1][row - 1][number - 1] = node.up()
             node.insert_up(Node(9))
-            constraints.insert_prev(node.up())
+            constraints.insert_left(node.up())
     
     for column in range(9):
         for row in range(9):
             for number in range(9):
-                squares[column][row][number] = squares[column][row][number].nxt()
+                squares[column][row][number] = squares[column][row][number].right()
 
     return (constraints, squares)
 
+def inform_constraints(square):
+    current = None
+    while not current is square:
+        if not current:
+            current = square
+
+        # remove column
+        vertical = current.up() # skip first node for backtrack
+        while not vertical is current:
+            if not vertical.is_header():
+                # remove row
+                horizontal = vertical.right() # skip first node for backtrack
+                while not horizontal is vertical:
+                    horizontal.up().delete_down()
+                    horizontal = horizontal.right()
+                
+            vertical.left().delete_right()
+            vertical = vertical.up()
+            
+        current = current.right()
+
+def uninform_constraints(square):
+    current = None
+    while not current is square:
+        if not current:
+            current = square
+
+        # restore column
+        vertical = current.down()
+        while not vertical is current:
+            vertical.right().insert_left(vertical)
+            if not vertical.is_header():
+                # restore row
+                horizontal = vertical.left()
+                while not horizontal is vertical:
+                    horizontal.down().insert_up(horizontal)
+                    horizontal = horizontal.left()
+
+            vertical = vertical.down()
+
+        current = current.left()
+    
 def inform_constraints(squares, column, row, number):
-    squares = copy.deepcopy(squares)
     square = squares[column][row][number]
 
     # each square solves 4 constraints (columns)
@@ -110,19 +151,19 @@ def inform_constraints(squares, column, row, number):
         # traverse column
         while True:
             if current.is_header():
-                current.prev().delete_next()
+                current.left().delete_right()
             else:
                 horizontal = current
                 # traverse row
                 while True:
                     horizontal.up().delete_down()
-                    horizontal = horizontal.nxt()
+                    horizontal = horizontal.right()
                     if horizontal is current:
                         break
             current = current.up()
             if current is square_row:
                 break
-        square_row = square_row.nxt()
+        square_row = square_row.right()
 
     
 
@@ -131,12 +172,12 @@ def solve_constraint(constraints):
     
 
 def success(constraints):
-    return constraints.nxt() is constraints
+    return constraints.right() is constraints
 
 def need_backtrack(constraints):
     constraint = constraints
     while True:
-        constraint = constraint.nxt()
+        constraint = constraint.right()
         if constraint.number() == 0:
             return True
         if constraint is constraints:
