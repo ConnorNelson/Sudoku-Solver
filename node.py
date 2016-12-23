@@ -25,6 +25,14 @@ class Node(object):
     def is_header(self):
         return self._column == 0 and self._row == 0
 
+    def dec_header(self):
+        if self.is_header():
+            self._number -= 1
+
+    def inc_header(self):
+        if self.is_header():
+            self._number += 1
+
     def column(self):
         return self._column
         

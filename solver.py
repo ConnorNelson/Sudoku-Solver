@@ -35,7 +35,7 @@ def init_constraints():
             for number in range(2, 10):
                 node.insert_up(Node(number, column, row))
                 numbers.append(node.up())
-            node.insert_up(Node(9))
+            node.insert_up(Node(9)) # all constraints can be solved by 9 squares
             constraints.insert_left(node.up())
             rows.append(numbers)
         squares.append(rows)
@@ -50,7 +50,7 @@ def init_constraints():
                 node.insert_up(Node(number, column, row))
                 squares[column - 1][row - 1][number - 1].insert_right(node.up())
                 squares[column - 1][row - 1][number - 1] = node.up()
-            node.insert_up(Node(9))
+            node.insert_up(Node(9)) # all constraints can be solved by 9 squares
             constraints.insert_left(node.up())
                 
     # every number in every row (some column in every number/row)
@@ -63,7 +63,7 @@ def init_constraints():
                 node.insert_up(Node(number, column, row))
                 squares[column - 1][row - 1][number - 1].insert_right(node.up())
                 squares[column - 1][row - 1][number - 1] = node.up()
-            node.insert_up(Node(9))
+            node.insert_up(Node(9)) # all constraints can be solved by 9 squares
             constraints.insert_left(node.up())
                 
     # every number in every block
@@ -83,7 +83,7 @@ def init_constraints():
                     node.insert_up(Node(number, column, row))
                     squares[column - 1][row - 1][number - 1].insert_right(node.up())
                     squares[column - 1][row - 1][number - 1] = node.up()
-            node.insert_up(Node(9))
+            node.insert_up(Node(9)) # all constraints can be solved by 9 squares
             constraints.insert_left(node.up())
     
     for column in range(9):
@@ -91,24 +91,29 @@ def init_constraints():
             for number in range(9):
                 squares[column][row][number] = squares[column][row][number].right()
 
-    # constraints are the major data structure, using 2d linked-list
-    # squares provide quick access into a particular square for initial state
-    return (constraints, squares)
+    return constraints
 
 def inform_constraints(square):
     current = None
-    while not current is square:
+    while current is not square:
         if not current:
             current = square
 
         # remove column
         vertical = current.up() # skip first node for backtrack
-        while not vertical is current:
+        while vertical is not current:
             if not vertical.is_header():
                 # remove row
                 horizontal = vertical.right() # skip first node for backtrack
-                while not horizontal is vertical:
+                while horizontal is not vertical:
                     horizontal.up().delete_down()
+                    
+                    # update the header
+                    header = horizontal.up()
+                    while not header.is_header():
+                        header = header.up()
+                    header.dec_header()
+
                     horizontal = horizontal.right()
                 
             vertical.left().delete_right()
@@ -118,19 +123,26 @@ def inform_constraints(square):
 
 def uninform_constraints(square):
     current = None
-    while not current is square:
+    while current is not square:
         if not current:
             current = square
 
         # restore column
         vertical = current.down()
-        while not vertical is current:
+        while vertical is not current:
             vertical.right().insert_left(vertical)
             if not vertical.is_header():
                 # restore row
                 horizontal = vertical.left()
-                while not horizontal is vertical:
+                while horizontal is not vertical:
                     horizontal.down().insert_up(horizontal)
+
+                    # update the header
+                    header = horizontal.down()
+                    while not header.is_header():
+                        header = header.down()
+                    header.inc_header()
+
                     horizontal = horizontal.left()
 
             vertical = vertical.down()
@@ -160,25 +172,44 @@ def parse_initial_state():
             game_state.append(int(c))
     return tuple(game_state)
 
-def solve_initial_constraints(initial_state, constraints, squares):
-    print 'initializing'
+def solve_initial_constraints(initial_state, constraints):
     for i, number in enumerate(initial_state):
         if number != 0:
             column = i % 9 + 1
             row = i / 9 + 1
-            square = squares[column - 1][row - 1][number - 1]
-            inform_constraints(square)
+            square = None
+            constraint = constraints.right()
+            while constraint is not constraints and square is None:
+                vertical = constraint.down()
+                while vertical is not constraint and square is None:
+                    if vertical.number() == number \
+                       and vertical.column() == column \
+                       and vertical.row() == row:
+                        square = vertical
+                    vertical = vertical.down()
+                constraint = constraint.right()
+            if (square):
+                inform_constraints(square)
+            else:
+                return False
+    return True
+
 
 def solve_constraints(constraints, state):
-    print 'solving'
     if success(constraints):
         return state
-    elif need_backtrack(constraints):
+    if need_backtrack(constraints):
         return False
 
-    constraint = constraints.right() # TODO: use Knuth's optimization of constraint with lowest number
-    vertical = constraint.down()
-    while not vertical is constraint:
+    constraint = constraints.right()
+    optimal_constraint = constraint
+    while constraint is not constraints:
+        if constraint.number() < optimal_constraint.number():
+            optimal_constraint = constraint
+        constraint = constraint.right()
+
+    vertical = optimal_constraint.down()
+    while vertical is not optimal_constraint:
         inform_constraints(vertical)
         solution = solve_constraints(constraints, state)
         if solution:
@@ -214,13 +245,13 @@ def print_state(state):
 
 def main():
     initial_state = parse_initial_state()
-    constraints, squares = init_constraints()
-    solve_initial_constraints(initial_state, constraints, squares)
-    solution = solve_constraints(constraints, initial_state)
-    if not solution:
-        print "This puzzle cannot be solved"
-    else:
+    constraints = init_constraints()
+    solvable = solve_initial_constraints(initial_state, constraints)
+    if solvable:
+        solution = solve_constraints(constraints, initial_state)
         print_state(solution)
+    else:
+        print "This puzzle cannot be solved"
 
 if __name__ == "__main__":
     main()            
