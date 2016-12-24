@@ -2,9 +2,12 @@
 ## Connor Nelson, 2016 ##
 #########################
 
-import copy
-import heapq
+import time
 from node import Node
+
+# debug info
+DEBUG = False
+total_backtracks = 0
 
 # shapes/lines for fancy printing
 TL = u'\u250F'
@@ -20,7 +23,20 @@ VER_R = u'\u252B'
 VER_HOR = u'\u254B'
 BOX = u'\u25A1'
 
+def debug_time(function):
+    def timed(*args, **kw):
+        start = time.time()
+        result = function(*args, **kw)
+        if DEBUG:
+            print function.__name__, "took (seconds):", '{0:.3f}'.format(time.time() - start)
+        return result
+    return timed
 
+def debug_print_info():
+    if DEBUG:
+        print "total backtracks:", total_backtracks
+
+@debug_time
 def init_constraints():
     constraints = Node(-1, -1, -1)
     squares = []
@@ -165,6 +181,7 @@ def update_state(state, number, column, row):
     index = 9 * (row - 1) + (column - 1)
     return state[:index] + (number,) + state[index + 1:]
 
+@debug_time
 def parse_initial_state():
     game_state = []
     for _ in range(9):
@@ -172,6 +189,7 @@ def parse_initial_state():
             game_state.append(int(c))
     return tuple(game_state)
 
+@debug_time
 def solve_initial_constraints(initial_state, constraints):
     for i, number in enumerate(initial_state):
         if number != 0:
@@ -193,7 +211,6 @@ def solve_initial_constraints(initial_state, constraints):
             else:
                 return False
     return True
-
 
 def solve_constraints(constraints, state):
     if success(constraints):
@@ -220,6 +237,9 @@ def solve_constraints(constraints, state):
         else:
             # need to backtrack
             uninform_constraints(vertical)
+            if DEBUG:
+                global total_backtracks
+                total_backtracks += 1
         vertical = vertical.down()
 
     return False # no way to solve the selected constraint from this state        
@@ -243,17 +263,22 @@ def print_state(state):
     print VER
     print BL + HOR * 7 + HOR_B + HOR * 7 + HOR_B + HOR * 7 + BR
 
+@debug_time
 def main():
     initial_state = parse_initial_state()
     constraints = init_constraints()
     solvable = solve_initial_constraints(initial_state, constraints)
     if solvable:
-        solution = solve_constraints(constraints, initial_state)
+        @debug_time
+        def complete_solve_constraints(constraints, initial_state):
+            return solve_constraints(constraints, initial_state)
+        solution = complete_solve_constraints(constraints, initial_state)
         print_state(solution)
+        debug_print_info()
     else:
         print "This puzzle cannot be solved"
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()            
     
     
