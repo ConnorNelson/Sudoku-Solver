@@ -17,7 +17,7 @@ BR = u'\u251B'
 HOR = u'\u2501'
 HOR_T = u'\u2533'
 HOR_B = u'\u253B'
-VER = u'\u2503' 
+VER = u'\u2503'
 VER_L = u'\u2523'
 VER_R = u'\u252B'
 VER_HOR = u'\u254B'
@@ -68,7 +68,7 @@ def init_constraints():
                 squares[column - 1][row - 1][number - 1] = node.up()
             node.insert_up(Node(9)) # all constraints can be solved by 9 squares
             constraints.insert_left(node.up())
-                
+
     # every number in every row (some column in every number/row)
     for number in range(1, 10):
         for row in range(1, 10):
@@ -81,7 +81,7 @@ def init_constraints():
                 squares[column - 1][row - 1][number - 1] = node.up()
             node.insert_up(Node(9)) # all constraints can be solved by 9 squares
             constraints.insert_left(node.up())
-                
+
     # every number in every block
     for number in range (1, 10):
         for block in range(9):
@@ -101,7 +101,7 @@ def init_constraints():
                     squares[column - 1][row - 1][number - 1] = node.up()
             node.insert_up(Node(9)) # all constraints can be solved by 9 squares
             constraints.insert_left(node.up())
-    
+
     for column in range(9):
         for row in range(9):
             for number in range(9):
@@ -123,7 +123,7 @@ def inform_constraints(square):
                 horizontal = vertical.right() # skip first node for backtrack
                 while horizontal is not vertical:
                     horizontal.up().delete_down()
-                    
+
                     # update the header
                     header = horizontal.up()
                     while not header.is_header():
@@ -131,10 +131,10 @@ def inform_constraints(square):
                     header.dec_header()
 
                     horizontal = horizontal.right()
-                
+
             vertical.left().delete_right()
             vertical = vertical.up()
-            
+
         current = current.right()
 
 def uninform_constraints(square):
@@ -180,14 +180,6 @@ def need_backtrack(constraints):
 def update_state(state, number, column, row):
     index = 9 * (row - 1) + (column - 1)
     return state[:index] + (number,) + state[index + 1:]
-
-@debug_time
-def parse_initial_state():
-    game_state = []
-    for _ in range(9):
-        for c in raw_input():
-            game_state.append(int(c))
-    return tuple(game_state)
 
 @debug_time
 def solve_initial_constraints(initial_state, constraints):
@@ -242,30 +234,10 @@ def solve_constraints(constraints, state):
                 total_backtracks += 1
         vertical = vertical.down()
 
-    return False # no way to solve the selected constraint from this state        
-
-def print_state(state):
-    print TL + HOR * 7 + HOR_T + HOR * 7 + HOR_T + HOR * 7 + TR
-
-    for i, element in enumerate(state):
-        if i % 9 == 0 and i != 0:
-            print VER
-        if i % 27 == 0 and i != 0:
-            print VER_L + HOR * 7 + VER_HOR + HOR * 7 + VER_HOR + HOR * 7 + VER_R
-        if i % 3 == 0:
-            print VER,
-
-        if element == 0:
-            print BOX,
-        else:
-            print element,
-
-    print VER
-    print BL + HOR * 7 + HOR_B + HOR * 7 + HOR_B + HOR * 7 + BR
+    return False # no way to solve the selected constraint from this state
 
 @debug_time
-def main():
-    initial_state = parse_initial_state()
+def solve(initial_state):
     constraints = init_constraints()
     solvable = solve_initial_constraints(initial_state, constraints)
     if solvable:
@@ -273,12 +245,28 @@ def main():
         def complete_solve_constraints(constraints, initial_state):
             return solve_constraints(constraints, initial_state)
         solution = complete_solve_constraints(constraints, initial_state)
-        print_state(solution)
-        debug_print_info()
+        return solution
+    else:
+        return None
+
+def main():
+    initial_state = []
+    for _ in range(9):
+        for c in raw_input():
+            initial_state.append(int(c))
+    initial_state = tuple(initial_state)
+
+    solution = solve(initial_state)
+
+    if solution:
+        for row in range(0, 9 ** 2, 9):
+            print ''.join(map(str, solution[row:row + 9]))
     else:
         print "This puzzle cannot be solved"
 
+    debug_print_info()
+
 if __name__ == '__main__':
-    main()            
-    
-    
+    main()
+
+
